@@ -1,9 +1,3 @@
-import { Injectable } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
-import { Observable } from 'rxjs/Observable';
-import { map } from 'rxjs/operators/map';
-import { Router } from '@angular/router';
-
 export interface UserDetails {
   _id: string;
   email: string;
@@ -21,6 +15,15 @@ export interface TokenPayload {
   password: string;
   name?: string;
 }
+
+
+import { Injectable } from '@angular/core';
+import { HttpClient } from '@angular/common/http';
+import { Observable, Subject, interval } from 'rxjs';
+import { map, switchMap } from 'rxjs/operators';
+import { Router } from '@angular/router';
+
+// Interfaces here
 
 @Injectable()
 export class AuthenticationService {
@@ -40,6 +43,11 @@ export class AuthenticationService {
     return this.token;
   }
 
+  public logout(): void {
+    this.token = '';
+    window.localStorage.removeItem('mean-token');
+    this.router.navigateByUrl('/');
+  }
   public getUserDetails(): UserDetails {
     const token = this.getToken();
     let payload;
@@ -51,7 +59,7 @@ export class AuthenticationService {
       return null;
     }
   }
-
+  
   public isLoggedIn(): boolean {
     const user = this.getUserDetails();
     if (user) {
@@ -63,13 +71,13 @@ export class AuthenticationService {
 
   private request(method: 'post'|'get', type: 'login'|'register'|'profile', user?: TokenPayload): Observable<any> {
     let base;
-
+  
     if (method === 'post') {
       base = this.http.post(`/api/${type}`, user);
     } else {
       base = this.http.get(`/api/${type}`, { headers: { Authorization: `Bearer ${this.getToken()}` }});
     }
-
+  
     const request = base.pipe(
       map((data: TokenResponse) => {
         if (data.token) {
@@ -78,25 +86,22 @@ export class AuthenticationService {
         return data;
       })
     );
-
+  
     return request;
   }
 
   public register(user: TokenPayload): Observable<any> {
     return this.request('post', 'register', user);
   }
-
+  
   public login(user: TokenPayload): Observable<any> {
     return this.request('post', 'login', user);
   }
-
+  
   public profile(): Observable<any> {
     return this.request('get', 'profile');
   }
-
-  public logout(): void {
-    this.token = '';
-    window.localStorage.removeItem('mean-token');
-    this.router.navigateByUrl('/');
-  }
+  
+  
+  
 }
